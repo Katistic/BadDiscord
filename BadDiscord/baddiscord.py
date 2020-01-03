@@ -249,7 +249,7 @@ class Client(discord.Client):
             'password': d["LoginDetails"]["Password"]
         }
 
-        r = requests.post('https://discordapp.com/auth/login', json=payload)
+        r = requests.post('https://discordapp.com/api/v7/auth/login', json=payload)
         if r.status_code == 400:
             raise discord.errors.LoginFailure('Improper credentials have been passed.')
         elif r.status_code != 200:
