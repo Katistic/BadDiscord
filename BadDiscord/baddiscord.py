@@ -1,4 +1,6 @@
-from PySide2 import QApplication
+from PySide2.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QPushButton,\
+QLineEdit
+
 import threading
 
 import discord
@@ -278,8 +280,93 @@ class Client(discord.Client):
         except discord.errors.HTTPException as e:
             raise Exception(e)
 
+## Menu Definitions ##
+
+class UpdaterWindow:
+    pass # Will do when first release hits
+
+class LoginMenu(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle('BadDiscord -- Login')
+
+        rl = QVBoxLayout()
+        self.setLayout(rl)
+
+        self.buttHolder = QWidget()
+        bl = QVBoxLayout()
+        self.buttHolder.setLayout(bl)
+
+        botButton = QPushButton("Bot Login")
+        userButton = QPushButton("User Login")
+        regButton = QPushButton("User Register")
+
+        bl.addWidget(botButton)
+        bl.addWidget(userButton)
+        bl.addWidget(QLabel("____________________________________________________________________"))
+        bl.addWidget(regButton)
+
+        botButton.clicked.connect(self.botLoginF)
+        userButton.clicked.connect(self.userLoginF)
+
+        rl.addWidget(self.buttHolder)
+        self.show()
+
+        self.setFixedSize(450, 140)
+
+        self.botLogin = QWidget()
+        bll = QVBoxLayout()
+        self.botLogin.setLayout(bll)
+
+        self.bToken = QLineEdit()
+        self.bLoginButton = QPushButton("Login")
+
+        bll.addWidget(self.bToken)
+        bll.addWidget(self.bLoginButton)
+        self.botLogin.hide()
+
+        rl.addWidget(self.botLogin)
+
+        self.userLogin = QWidget()
+        ull = QVBoxLayout()
+        self.userLogin.setLayout(ull)
+
+        self.uEmail = QLineEdit()
+        self.uPass = QLineEdit()
+        self.uuLogin = QPushButton("Login")
+        self.uToken = QLineEdit()
+        self.utLogin = QPushButton("Login")
+
+        ull.addWidget(self.uEmail)
+        ull.addWidget(self.uPass)
+        ull.addWidget(self.uuLogin)
+        ull.addWidget(QLabel("____________________________________________________________________"))
+        ull.addWidget(self.uToken)
+        ull.addWidget(self.utLogin)
+        self.userLogin.hide()
+
+        rl.addWidget(self.userLogin)
+
+    def botLoginF(self):
+        self.setFixedSize(450, 100)
+        #self.setMinimumSize(1, 1)
+
+        self.buttHolder.hide()
+        self.botLogin.show()
+
+    def userLoginF(self):
+        self.setFixedSize(450, 210)
+        self.setMinimumSize(1, 1)
+
+        self.buttHolder.hide()
+        self.userLogin.show()
+
 class MainWindow:
     pass
 
-class UpdaterWindow:
-    pass
+
+if __name__ == "__main__":
+    app = QApplication()
+    LM = LoginMenu()
+    app.exec_()
