@@ -1,7 +1,12 @@
 from PySide2 import QApplication
+import threading
 
 import discord
 import requests
+import time
+import json
+import uuid
+import os
 
 class IOManager: ## Manages reading and writing data to files.
     def __init__(self, file, start=True, jtype=True, binary=False):
@@ -196,7 +201,7 @@ class IOManager: ## Manages reading and writing data to files.
 
         self.stopped = True # Set operation thread as stopped
 
-class Client:
+class Client(discord.Client):
     def __init__(self):
         super().__init__()
 
@@ -248,10 +253,15 @@ class Client:
         if r.status_code == 400:
             raise discord.errors.LoginFailure('Improper credentials have been passed.')
         elif r.status_code != 200:
-            raise discord.errors.HTTPException(r)
+            r.status = r.status_code
+            raise discord.errors.HTTPException(r, r.reason)
 
-        self.setToken(r.json()['token'])
-        self.run()
+        r = r.json()
+        if r['token'] != None:
+            self.setToken(r['token'])
+            self.run()
+        else:
+            raise Exception("MFA accounts are not supported.")
 
     def run(self):
         d = self.io.Read()["LoginDetails"]
@@ -259,14 +269,14 @@ class Client:
         b = d['BotUser']
 
         try:
-            super().run(t, b)
+            super().run(t, bot=b)
         except discord.errors.LoginFailure as e:
             if d['Email'] != None and d['Password'] != None and d["BotUser"] == True:
                 self.uLogin()
             else:
                 raise discord.errors.LoginFailure(e)
         except discord.errors.HTTPException as e:
-            raise discord.errors.HTTPException(e)
+            raise Exception(e)
 
 class MainWindow:
     pass
