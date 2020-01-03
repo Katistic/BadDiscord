@@ -350,14 +350,14 @@ class LoginMenu(QWidget):
 
     def botLoginF(self):
         self.setFixedSize(450, 100)
-        #self.setMinimumSize(1, 1)
+        self.setMinimumSize(450, 100)
 
         self.buttHolder.hide()
         self.botLogin.show()
 
     def userLoginF(self):
         self.setFixedSize(450, 210)
-        self.setMinimumSize(1, 1)
+        self.setMinimumSize(450, 210)
 
         self.buttHolder.hide()
         self.userLogin.show()
