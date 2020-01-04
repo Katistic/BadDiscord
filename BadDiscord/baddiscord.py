@@ -1,14 +1,19 @@
 from PySide2.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QPushButton,\
 QLineEdit
 
+from PySide2.QtCore import Qt
+
 import threading
 
 import discord
+import asyncio
 import requests
 import time
 import json
 import uuid
 import os
+
+bot = None
 
 class IOManager: ## Manages reading and writing data to files.
     def __init__(self, file, start=True, jtype=True, binary=False):
@@ -219,6 +224,15 @@ class Client(discord.Client):
                 }
             })
 
+        self.botThread = None
+
+    # Event Handling
+
+    async def on_ready(self):
+        print("Ready")
+
+    # Setups
+
     def setUserEmail(self, e):
         id = self.io.GetId()
         fd = self.io.Read(waitforwrite=True, id=id)
@@ -261,17 +275,17 @@ class Client(discord.Client):
         r = r.json()
         if r['token'] != None:
             self.setToken(r['token'])
-            self.run()
+            self.sRun()
         else:
             raise Exception("MFA accounts are not supported.")
 
-    def run(self):
+    def sRun(self):
         d = self.io.Read()["LoginDetails"]
         t = d['Token']
         b = d['BotUser']
 
         try:
-            super().run(t, bot=b)
+            self.run(t, bot=b)
         except discord.errors.LoginFailure as e:
             if d['Email'] != None and d['Password'] != None and d["BotUser"] == True:
                 self.uLogin()
@@ -294,6 +308,11 @@ class LoginMenu(QWidget):
         rl = QVBoxLayout()
         self.setLayout(rl)
 
+        self.status = QLabel()
+        self.status.setAlignment(Qt.AlignHCenter)
+
+        rl.addWidget(self.status)
+
         self.buttHolder = QWidget()
         bl = QVBoxLayout()
         self.buttHolder.setLayout(bl)
@@ -313,7 +332,7 @@ class LoginMenu(QWidget):
         rl.addWidget(self.buttHolder)
         self.show()
 
-        self.setFixedSize(450, 140)
+        self.setFixedSize(450, 190)
 
         self.botLogin = QWidget()
         bll = QVBoxLayout()
@@ -321,6 +340,8 @@ class LoginMenu(QWidget):
 
         self.bToken = QLineEdit()
         self.bLoginButton = QPushButton("Login")
+
+        self.bLoginButton.clicked.connect(lambda: self.doTokenLogin(self.bToken.text(), True))
 
         bll.addWidget(self.bToken)
         bll.addWidget(self.bLoginButton)
@@ -338,6 +359,9 @@ class LoginMenu(QWidget):
         self.uToken = QLineEdit()
         self.utLogin = QPushButton("Login")
 
+        self.utLogin.clicked.connect(lambda: self.doTokenLogin(self.uToken.text(), False))
+        self.uuLogin.clicked.connect(self.doEPLogin)
+
         ull.addWidget(self.uEmail)
         ull.addWidget(self.uPass)
         ull.addWidget(self.uuLogin)
@@ -348,16 +372,49 @@ class LoginMenu(QWidget):
 
         rl.addWidget(self.userLogin)
 
+    def doTokenLogin(self, t, b):
+        bot.setBotUser(b)
+        bot.setToken(t)
+
+        if bot.botThread == None or not bot.botThread.is_alive():
+            asyncio.set_event_loop(asyncio.new_event_loop())
+            bot.botThread = threading.Thread(target = bot.sRun)
+            bot.botThread.daemon = True
+            bot.botThread.start()
+
+            self.status.setText("Connecting to discord...")
+            print("Connecting to discord...")
+        else:
+            self.status.setText("Client is already running! Please wait...")
+            print("Client is already running!")
+
+    def doEPLogin(self):
+        bot.setBotUser(False)
+        bot.setUserEmail(self.uEmail.text())
+        bot.setUserPassword(self.uPass.text())
+
+        if bot.botThread == None or not bot.botThread.is_alive():
+            asyncio.set_event_loop(asyncio.new_event_loop())
+            bot.botThread = threading.Thread(target = bot.uLogin)
+            bot.botThread.daemon = True
+            bot.botThread.start()
+
+            self.status.setText("Connecting to discord...")
+            print("Connecting to discord...")
+        else:
+            self.status.setText("Client is already running! Please wait...")
+            print("Client is already running!")
+
     def botLoginF(self):
-        self.setFixedSize(450, 100)
-        self.setMinimumSize(450, 100)
+        self.setFixedSize(450, 150)
+        self.setMinimumSize(450, 150)
 
         self.buttHolder.hide()
         self.botLogin.show()
 
     def userLoginF(self):
-        self.setFixedSize(450, 210)
-        self.setMinimumSize(450, 210)
+        self.setFixedSize(450, 260)
+        self.setMinimumSize(450, 260)
 
         self.buttHolder.hide()
         self.userLogin.show()
@@ -367,6 +424,10 @@ class MainWindow:
 
 
 if __name__ == "__main__":
+    bot = Client()
+
     app = QApplication()
     LM = LoginMenu()
     app.exec_()
+
+    bot.io.Stop()
