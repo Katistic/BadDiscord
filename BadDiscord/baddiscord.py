@@ -16,6 +16,7 @@ import uuid
 import os
 
 io = None
+c = None
 
 class IOManager: ## Manages reading and writing data to files.
     def __init__(self, file, start=True, jtype=True, binary=False):
@@ -236,6 +237,7 @@ class LoginMenu(QWidget):
 
         bbwl.setStretchFactor(spacer, 5)
         bb.clicked.connect(lambda: self.switcher(self.mm))
+        bb.clicked.connect(lambda: c.setFixedSize(450, 150))
 
         ull.addWidget(bbw)
 
@@ -253,12 +255,33 @@ class LoginMenu(QWidget):
 
         email = QLineEdit()
         passw = QLineEdit()
+        dlb = QPushButton("Login")
 
         ewl.addWidget(email)
         pwl.addWidget(passw)
 
         ull.addWidget(ew)
         ull.addWidget(pw)
+        ull.addWidget(dlb)
+
+        ## Seperator
+
+        ull.addWidget(QLabel("_______________________________________________________________________"))
+
+        ## Token Login
+
+        tw = QWidget()
+        twl = QHBoxLayout()
+        tw.setLayout(twl)
+
+        token = QLineEdit()
+        tlb = QPushButton("Login")
+
+        twl.addWidget(QLabel("Token"))
+        twl.addWidget(token)
+
+        ull.addWidget(tw)
+        ull.addWidget(tlb)
 
         # Align everything to top
         squish = QWidget()
@@ -286,8 +309,24 @@ class LoginMenu(QWidget):
 
         bbwl.setStretchFactor(spacer, 5)
         bb.clicked.connect(lambda: self.switcher(self.mm))
+        bb.clicked.connect(lambda: c.setFixedSize(450, 150))
 
         bll.addWidget(bbw)
+
+        ## Token Login
+
+        tw = QWidget()
+        twl = QHBoxLayout()
+        tw.setLayout(twl)
+
+        token = QLineEdit()
+        tlb = QPushButton("Login")
+
+        twl.addWidget(QLabel("Token"))
+        twl.addWidget(token)
+
+        bll.addWidget(tw)
+        bll.addWidget(tlb)
 
         # Align everything to top
         squish = QWidget()
@@ -329,7 +368,10 @@ class LoginMenu(QWidget):
         self.cwidget = self.mm
 
         ulb.clicked.connect(lambda: self.switcher(ul))
+        ulb.clicked.connect(lambda: c.setFixedSize(450, 350))
+
         blb.clicked.connect(lambda: self.switcher(bl))
+        blb.clicked.connect(lambda: c.setFixedSize(450, 220))
 
         # Align everything to top
         squish = QWidget()
@@ -352,7 +394,7 @@ class Client(QWidget, discord.Client):
         lm = LoginMenu()
         l.addWidget(lm)
 
-        self.setFixedSize(450, 230)
+        self.setFixedSize(450, 150)
         self.setWindowTitle("BadDiscord -- Login")
 
         self.show()
