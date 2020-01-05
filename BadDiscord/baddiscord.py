@@ -234,6 +234,14 @@ class LoginMenu(QWidget):
         try:
             await c.login(t, bot=b)
             try:
+                id = io.GetId()
+                d = io.Read(True, id)
+
+                d["LoginDetails"]["Token"] = t
+                d["LoginDetails"]["BotUser"] = bot
+
+                io.Write(d, id)
+
                 await discord.Client.connect(c)
             except Exception as e:
                 c.Popup(str(e))
