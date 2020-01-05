@@ -125,3 +125,4 @@ dmypy.json
 .pyre/
 BadDiscord/configs.json
 BadDiscord/baddiscord.old.py
+BadDiscord/Assets/mb_logo.png
