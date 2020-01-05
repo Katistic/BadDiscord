@@ -1,7 +1,9 @@
-from PySide2.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QPushButton,\
-QLineEdit
+from PySide2.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout,\
+QPushButton, QLineEdit, QSizePolicy
 
 from PySide2.QtCore import Qt
+
+from qasync import QEventLoop, QThreadExecutor
 
 import threading
 
@@ -13,7 +15,7 @@ import json
 import uuid
 import os
 
-bot = None
+io = None
 
 class IOManager: ## Manages reading and writing data to files.
     def __init__(self, file, start=True, jtype=True, binary=False):
@@ -208,226 +210,176 @@ class IOManager: ## Manages reading and writing data to files.
 
         self.stopped = True # Set operation thread as stopped
 
-class Client(discord.Client):
-    def __init__(self):
-        super().__init__()
-
-        self.io = IOManager("configs.json")
-        if self.io.Read() == {}:
-            # Write defaults to configs
-            self.io.Write({
-                "LoginDetails": {
-                    "Token": None,
-                    "BotUser": False,
-                    "Email": None,
-                    "Password": None
-                }
-            })
-
-        self.botThread = None
-
-    # Event Handling
-
-    async def on_ready(self):
-        print("Ready")
-
-    # Setups
-
-    def setUserEmail(self, e):
-        id = self.io.GetId()
-        fd = self.io.Read(waitforwrite=True, id=id)
-        fd['LoginDetails']['Email'] = e
-        self.io.Write(fd, id)
-
-    def setUserPassword(self, p):
-        id = self.io.GetId()
-        fd = self.io.Read(waitforwrite=True, id=id)
-        fd['LoginDetails']['Password'] = p
-        self.io.Write(fd, id)
-
-    def setBotUser(self, b):
-        id = self.io.GetId()
-        fd = self.io.Read(waitforwrite=True, id=id)
-        fd['LoginDetails']['BotUser'] = b
-        self.io.Write(fd, id)
-
-    def setToken(self, t):
-        id = self.io.GetId()
-        fd = self.io.Read(waitforwrite=True, id=id)
-        fd['LoginDetails']['Token'] = t
-        self.io.Write(fd, id)
-
-    def uLogin(self):
-        d = self.io.Read()
-
-        payload = {
-            'email': d["LoginDetails"]["Email"],
-            'password': d["LoginDetails"]["Password"]
-        }
-
-        r = requests.post('https://discordapp.com/api/v7/auth/login', json=payload)
-        if r.status_code == 400:
-            raise discord.errors.LoginFailure('Improper credentials have been passed.')
-        elif r.status_code != 200:
-            r.status = r.status_code
-            raise discord.errors.HTTPException(r, r.reason)
-
-        r = r.json()
-        if r['token'] != None:
-            self.setToken(r['token'])
-            self.sRun()
-        else:
-            raise Exception("MFA accounts are not supported.")
-
-    def sRun(self):
-        d = self.io.Read()["LoginDetails"]
-        t = d['Token']
-        b = d['BotUser']
-
-        try:
-            self.run(t, bot=b)
-        except discord.errors.LoginFailure as e:
-            if d['Email'] != None and d['Password'] != None and d["BotUser"] == True:
-                self.uLogin()
-            else:
-                raise discord.errors.LoginFailure(e)
-        except discord.errors.HTTPException as e:
-            raise Exception(e)
-
-## Menu Definitions ##
-
-class UpdaterWindow:
-    pass # Will do when first release hits
-
 class LoginMenu(QWidget):
+    def switcher(self, nw):
+        self.cwidget.hide()
+
+        self.cwidget = nw
+        nw.show()
+
+    def setupUserLogin(self):
+        ul = QWidget()
+        ull = QVBoxLayout()
+        ul.setLayout(ull)
+
+        ## Back button
+
+        bbw = QWidget()
+        bbwl = QHBoxLayout()
+        bbw.setLayout(bbwl)
+
+        bb = QPushButton("<- Go Back")
+        spacer = QWidget()
+
+        bbwl.addWidget(bb)
+        bbwl.addWidget(spacer)
+
+        bbwl.setStretchFactor(spacer, 5)
+        bb.clicked.connect(lambda: self.switcher(self.mm))
+
+        ull.addWidget(bbw)
+
+        ## Detail Fields
+
+        ew = QWidget()
+        pw = QWidget()
+        ewl = QHBoxLayout()
+        pwl = QHBoxLayout()
+        ew.setLayout(ewl)
+        pw.setLayout(pwl)
+
+        ewl.addWidget(QLabel("Email"))
+        pwl.addWidget(QLabel("Password"))
+
+        email = QLineEdit()
+        passw = QLineEdit()
+
+        ewl.addWidget(email)
+        pwl.addWidget(passw)
+
+        ull.addWidget(ew)
+        ull.addWidget(pw)
+
+        # Align everything to top
+        squish = QWidget()
+        ull.addWidget(squish)
+        ull.setStretchFactor(squish, 100)
+
+        return ul
+
+    def setupBotLogin(self):
+        bl = QWidget()
+        bll = QVBoxLayout()
+        bl.setLayout(bll)
+
+        ## Back button
+
+        bbw = QWidget()
+        bbwl = QHBoxLayout()
+        bbw.setLayout(bbwl)
+
+        bb = QPushButton("<- Go Back")
+        spacer = QWidget()
+
+        bbwl.addWidget(bb)
+        bbwl.addWidget(spacer)
+
+        bbwl.setStretchFactor(spacer, 5)
+        bb.clicked.connect(lambda: self.switcher(self.mm))
+
+        bll.addWidget(bbw)
+
+        # Align everything to top
+        squish = QWidget()
+        bll.addWidget(squish)
+        bll.setStretchFactor(squish, 5)
+
+        return bl
+
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle('BadDiscord -- Login')
+        l = QVBoxLayout()
+        self.setLayout(l)
 
-        rl = QVBoxLayout()
-        self.setLayout(rl)
+        title = QLabel("Login to BadDiscord")
+        title.setAlignment(Qt.AlignHCenter)
+        title.setStyleSheet("font: 18pt;")
+        l.addWidget(title)
 
-        self.status = QLabel()
-        self.status.setAlignment(Qt.AlignHCenter)
+        self.mm = QWidget()
+        mml = QVBoxLayout()
+        self.mm.setLayout(mml)
 
-        rl.addWidget(self.status)
+        ul = self.setupUserLogin()
+        bl = self.setupBotLogin()
 
-        self.buttHolder = QWidget()
-        bl = QVBoxLayout()
-        self.buttHolder.setLayout(bl)
+        ulb = QPushButton("Login as User")
+        blb = QPushButton("Login as Bot")
+        mml.addWidget(ulb)
+        mml.addWidget(blb)
 
-        botButton = QPushButton("Bot Login")
-        userButton = QPushButton("User Login")
-        regButton = QPushButton("User Register")
+        l.addWidget(ul)
+        l.addWidget(bl)
+        l.addWidget(self.mm)
 
-        bl.addWidget(botButton)
-        bl.addWidget(userButton)
-        bl.addWidget(QLabel("____________________________________________________________________"))
-        bl.addWidget(regButton)
+        ul.hide()
+        bl.hide()
 
-        botButton.clicked.connect(self.botLoginF)
-        userButton.clicked.connect(self.userLoginF)
+        self.cwidget = self.mm
 
-        rl.addWidget(self.buttHolder)
+        ulb.clicked.connect(lambda: self.switcher(ul))
+        blb.clicked.connect(lambda: self.switcher(bl))
+
+        # Align everything to top
+        squish = QWidget()
+        l.addWidget(squish)
+        l.setStretchFactor(squish, 5)
+
         self.show()
 
-        self.setFixedSize(450, 190)
-
-        self.botLogin = QWidget()
-        bll = QVBoxLayout()
-        self.botLogin.setLayout(bll)
-
-        self.bToken = QLineEdit()
-        self.bLoginButton = QPushButton("Login")
-
-        self.bLoginButton.clicked.connect(lambda: self.doTokenLogin(self.bToken.text(), True))
-
-        bll.addWidget(self.bToken)
-        bll.addWidget(self.bLoginButton)
-        self.botLogin.hide()
-
-        rl.addWidget(self.botLogin)
-
-        self.userLogin = QWidget()
-        ull = QVBoxLayout()
-        self.userLogin.setLayout(ull)
-
-        self.uEmail = QLineEdit()
-        self.uPass = QLineEdit()
-        self.uuLogin = QPushButton("Login")
-        self.uToken = QLineEdit()
-        self.utLogin = QPushButton("Login")
-
-        self.utLogin.clicked.connect(lambda: self.doTokenLogin(self.uToken.text(), False))
-        self.uuLogin.clicked.connect(self.doEPLogin)
-
-        ull.addWidget(self.uEmail)
-        ull.addWidget(self.uPass)
-        ull.addWidget(self.uuLogin)
-        ull.addWidget(QLabel("____________________________________________________________________"))
-        ull.addWidget(self.uToken)
-        ull.addWidget(self.utLogin)
-        self.userLogin.hide()
-
-        rl.addWidget(self.userLogin)
-
-    def doTokenLogin(self, t, b):
-        bot.setBotUser(b)
-        bot.setToken(t)
-
-        if bot.botThread == None or not bot.botThread.is_alive():
-            asyncio.set_event_loop(asyncio.new_event_loop())
-            bot.botThread = threading.Thread(target = bot.sRun)
-            bot.botThread.daemon = True
-            bot.botThread.start()
-
-            self.status.setText("Connecting to discord...")
-            print("Connecting to discord...")
-        else:
-            self.status.setText("Client is already running! Please wait...")
-            print("Client is already running!")
-
-    def doEPLogin(self):
-        bot.setBotUser(False)
-        bot.setUserEmail(self.uEmail.text())
-        bot.setUserPassword(self.uPass.text())
-
-        if bot.botThread == None or not bot.botThread.is_alive():
-            asyncio.set_event_loop(asyncio.new_event_loop())
-            bot.botThread = threading.Thread(target = bot.uLogin)
-            bot.botThread.daemon = True
-            bot.botThread.start()
-
-            self.status.setText("Connecting to discord...")
-            print("Connecting to discord...")
-        else:
-            self.status.setText("Client is already running! Please wait...")
-            print("Client is already running!")
-
-    def botLoginF(self):
-        self.setFixedSize(450, 150)
-        self.setMinimumSize(450, 150)
-
-        self.buttHolder.hide()
-        self.botLogin.show()
-
-    def userLoginF(self):
-        self.setFixedSize(450, 260)
-        self.setMinimumSize(450, 260)
-
-        self.buttHolder.hide()
-        self.userLogin.show()
-
-class MainWindow:
+class MainApp(QWidget):
     pass
 
+class Client(QWidget, discord.Client):
+    def __init__(self):
+        super().__init__()
+
+    async def startClient(self):
+        l = QVBoxLayout()
+        self.setLayout(l)
+
+        lm = LoginMenu()
+        l.addWidget(lm)
+
+        self.setFixedSize(450, 230)
+        self.setWindowTitle("BadDiscord -- Login")
+
+        self.show()
 
 if __name__ == "__main__":
-    bot = Client()
-
     app = QApplication()
-    LM = LoginMenu()
-    app.exec_()
+    loop = QEventLoop(app)
+    asyncio.set_event_loop(loop)
 
-    bot.io.Stop()
+    c = Client()
+
+    io = IOManager("configs.json")
+    if io.Read() == {}:
+        # Write defaults to configs
+        io.Write({
+            "LoginDetails": {
+                "Token": None,
+                "BotUser": False,
+                "Email": None,
+                "Password": None
+            }
+        })
+
+    # So we don't have to ensure loop is always running,
+    # Create task and run forever
+    with loop:
+        loop.create_task(c.startClient())
+        loop.run_forever()
+
+    io.Stop()
