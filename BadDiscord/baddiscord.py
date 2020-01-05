@@ -218,6 +218,24 @@ class LoginMenu(QWidget):
         self.cwidget = nw
         nw.show()
 
+    async def loginUserDetails(self, e, p):
+        t = await c.getUserToken(e, p)
+
+        if t != None:
+            await self.login(t, bot=False)
+
+    async def loginToken(self, t, b):
+        try:
+            await c.login(t, bot=b)
+            try:
+                await c.connect()
+            except Exception as e:
+                c.Popup(e)
+        except discord.errors.LoginFailure as e:
+            c.Popup("Token is incorrect.")
+        except discord.errors.HTTPException as e:
+            c.Popup(str(e))
+
     def setupUserLogin(self):
         ul = QWidget()
         ull = QVBoxLayout()
