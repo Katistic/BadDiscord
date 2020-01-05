@@ -474,8 +474,6 @@ if __name__ == "__main__":
             "LoginDetails": {
                 "Token": None,
                 "BotUser": False,
-                "Email": None,
-                "Password": None
             }
         })
 
