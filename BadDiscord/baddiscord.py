@@ -274,6 +274,7 @@ class LoginMenu(QWidget):
         email = QLineEdit()
         passw = QLineEdit()
         dlb = QPushButton("Login")
+        dlb.clicked.connect(lambda: loop.create_task(self.loginUserDetails(email.text(), passw.text())))
 
         ewl.addWidget(email)
         pwl.addWidget(passw)
@@ -294,6 +295,7 @@ class LoginMenu(QWidget):
 
         token = QLineEdit()
         tlb = QPushButton("Login")
+        tlb.clicked.connect(lambda: loop.create_task(self.loginToken(token.text(), False)))
 
         twl.addWidget(QLabel("Token"))
         twl.addWidget(token)
@@ -339,6 +341,7 @@ class LoginMenu(QWidget):
 
         token = QLineEdit()
         tlb = QPushButton("Login")
+        tlb.clicked.connect(lambda: loop.create_task(self.loginToken(token.text(), True)))
 
         twl.addWidget(QLabel("Token"))
         twl.addWidget(token)
