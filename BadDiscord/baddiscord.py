@@ -411,12 +411,32 @@ class LoginMenu(QWidget):
         self.show()
 
 class MainApp(QWidget):
-    pass
+    def __init__(self, parent):
+        super().__init__()
+
+        self.client = parent
+        parent.maw = self
+        parent.l.addWidget(self)
+
+        self.show()
 
 class Client(QWidget, discord.Client):
     def __init__(self):
         QWidget.__init__(self)
         discord.Client.__init__(self)
+
+        self.maw = None
+
+    async def on_ready(self):
+        print("Logged in as " + self.user.name)
+
+        self.lm.hide()
+        del self.lm
+
+        self.setWindowTitle("BadDiscord -- " + self.user.name + " -- Bot User"\
+         if self.user.bot else "BadDiscord -- " + self.user.name)
+
+        MainApp(self)
 
     def Popup(self, text):
         l = QMessageBox()
@@ -427,7 +447,6 @@ class Client(QWidget, discord.Client):
         l.show()
 
         self.temp = l
-
 
     async def getUserToken(self, e, p):
         session = aiohttp.ClientSession(
@@ -462,11 +481,11 @@ class Client(QWidget, discord.Client):
         return None
 
     async def startClient(self):
-        l = QVBoxLayout()
-        self.setLayout(l)
+        self.l = QVBoxLayout()
+        self.setLayout(self.l)
 
-        lm = LoginMenu()
-        l.addWidget(lm)
+        self.lm = LoginMenu()
+        self.l.addWidget(self.lm)
 
         self.setFixedSize(450, 150)
         self.setWindowTitle("BadDiscord -- Login")
