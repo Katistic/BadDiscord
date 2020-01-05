@@ -238,7 +238,7 @@ class LoginMenu(QWidget):
                 d = io.Read(True, id)
 
                 d["LoginDetails"]["Token"] = t
-                d["LoginDetails"]["BotUser"] = bot
+                d["LoginDetails"]["BotUser"] = b
 
                 io.Write(d, id)
 
