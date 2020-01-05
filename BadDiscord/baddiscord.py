@@ -2,7 +2,7 @@ from PySide2.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxL
 QPushButton, QLineEdit, QSizePolicy, QMessageBox, QStyle, QToolBar, QMenu, QWidgetAction
 
 from PySide2.QtCore import Qt
-from PySide2.QtGui import QIcon, QWindow
+from PySide2.QtGui import QIcon, QWindow, QPalette
 
 from qasync import QEventLoop, QThreadExecutor
 
@@ -266,6 +266,7 @@ class LoginMenu(QWidget):
         bbw.setLayout(bbwl)
 
         bb = QPushButton("<- Go Back")
+        bb.setStyleSheet("background-color: #ffffff;")
         spacer = QWidget()
 
         bbwl.addWidget(bb)
@@ -290,8 +291,11 @@ class LoginMenu(QWidget):
         pwl.addWidget(QLabel("Password"))
 
         email = QLineEdit()
+        email.setStyleSheet("background-color: #ffffff;")
         passw = QLineEdit()
+        passw.setStyleSheet("background-color: #ffffff;")
         dlb = QPushButton("Login")
+        dlb.setStyleSheet("background-color: #ffffff;")
         dlb.clicked.connect(lambda: loop.create_task(self.loginUserDetails(email.text(), passw.text())))
 
         ewl.addWidget(email)
@@ -312,7 +316,9 @@ class LoginMenu(QWidget):
         tw.setLayout(twl)
 
         token = QLineEdit()
+        token.setStyleSheet("background-color: #ffffff;")
         tlb = QPushButton("Login")
+        tlb.setStyleSheet("background-color: #ffffff;")
         tlb.clicked.connect(lambda: loop.create_task(self.loginToken(token.text(), False)))
 
         twl.addWidget(QLabel("Token"))
@@ -340,6 +346,7 @@ class LoginMenu(QWidget):
         bbw.setLayout(bbwl)
 
         bb = QPushButton("<- Go Back")
+        bb.setStyleSheet("background-color: #ffffff;")
         spacer = QWidget()
 
         bbwl.addWidget(bb)
@@ -358,7 +365,9 @@ class LoginMenu(QWidget):
         tw.setLayout(twl)
 
         token = QLineEdit()
+        token.setStyleSheet("background-color: #ffffff;")
         tlb = QPushButton("Login")
+        tlb.setStyleSheet("background-color: #ffffff;")
         tlb.clicked.connect(lambda: loop.create_task(self.loginToken(token.text(), True)))
 
         twl.addWidget(QLabel("Token"))
@@ -395,6 +404,10 @@ class LoginMenu(QWidget):
         ulb = QPushButton("Login as User")
         blb = QPushButton("Login as Bot")
         mml.addWidget(ulb)
+
+        ulb.setStyleSheet("background-color: #ffffff;")
+        blb.setStyleSheet("background-color: #ffffff;")
+
         mml.addWidget(blb)
 
         l.addWidget(ul)
@@ -435,7 +448,7 @@ class MainApp(QWidget):
         tb = QWidget()
         tbl = QHBoxLayout()
         tb.setLayout(tbl)
-        tb.setStyleSheet("border: 3px solid black;")
+        tb.setStyleSheet("border: 3px solid black; background-color: #7289da;")
 
         tbl.setAlignment(Qt.AlignLeft)
 
@@ -502,6 +515,7 @@ class Client(QWidget, QWindow, discord.Client):
         self.setWindowTitle("BadDiscord -- " + self.user.name + " -- Bot User"\
          if self.user.bot else "BadDiscord -- " + self.user.name)
 
+        self.setStyleSheet("background-color: #2c2f33;")
         MainApp(self)
 
     def Popup(self, text):
@@ -552,12 +566,12 @@ class Client(QWidget, QWindow, discord.Client):
 
         self.lm = LoginMenu()
         self.l.addWidget(self.lm)
+        self.l.setMargin(0)
 
         self.setFixedSize(450, 150)
         self.setWindowTitle("BadDiscord -- Login")
         self.setWindowIcon(self.ico)
-
-        self.l.setMargin(0)
+        self.setStyleSheet("background-color: #7289da;")
 
         self.show()
 
