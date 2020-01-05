@@ -1,7 +1,8 @@
 from PySide2.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout,\
-QPushButton, QLineEdit, QSizePolicy, QMessageBox, QStyle
+QPushButton, QLineEdit, QSizePolicy, QMessageBox, QStyle, QToolBar, QMenu, QWidgetAction
 
 from PySide2.QtCore import Qt
+from PySide2.QtGui import QIcon, QWindow
 
 from qasync import QEventLoop, QThreadExecutor
 
@@ -419,6 +420,42 @@ class LoginMenu(QWidget):
         self.show()
 
 class MainApp(QWidget):
+    def ScreenChanged(self, screen):
+        self.client.setMaximumSize(screen.size())
+
+    def addServerAction(self, text, function, args=[], kwargs={}):
+        action = QWidgetAction(self)
+        aButton = QPushButton(text)
+        aButton.clicked.connect(lambda: function(*args, **kwargs))
+
+        action.setDefaultWidget(aButton)
+        self.ServerActions.addAction(action)
+
+    def setupTopBar(self):
+        tb = QWidget()
+        tbl = QHBoxLayout()
+        tb.setLayout(tbl)
+        tb.setStyleSheet("border: 3px solid black;")
+
+        tbl.setAlignment(Qt.AlignLeft)
+
+        homeBtn = QPushButton()
+        homeBtn.setIcon(self.client.ico)
+
+        saTB = QToolBar()
+        self.ServerActions = QMenu()
+        self.ServerActions.setTitle("⠀           Home             ⠀")
+
+        saTB.addAction(self.ServerActions.menuAction())
+
+        tbl.addWidget(homeBtn)
+        tbl.addWidget(saTB)
+        saTB.setStyleSheet("border: 1px solid black;")
+        homeBtn.setStyleSheet("border: none;")
+        self.ServerActions.setStyleSheet("border: none;")
+
+        return tb
+
     def __init__(self, parent):
         super().__init__()
 
@@ -426,14 +463,35 @@ class MainApp(QWidget):
         parent.maw = self
         parent.l.addWidget(self)
 
+        l = QVBoxLayout()
+        self.setLayout(l)
+        l.setAlignment(Qt.AlignTop)
+
+        tb = self.setupTopBar()
+
+        l.addWidget(tb)
+
+        parent.setMinimumSize(parent.size())
+        parent.setMaximumSize(parent.screen().size())
+
+        parent.screenChanged.connect(self.ScreenChanged)
+
+        parent.hide()
+        parent.setWindowFlag(Qt.CustomizeWindowHint)
+        parent.setWindowFlag(Qt.WindowMaximizeButtonHint)
+        parent.show()
+
         self.show()
 
-class Client(QWidget, discord.Client):
+class Client(QWidget, QWindow, discord.Client):
     def __init__(self):
         QWidget.__init__(self)
+        QWindow.__init__(self)
         discord.Client.__init__(self)
 
         self.maw = None
+        self.ico = QIcon()
+        self.ico.addFile("./Assets/logo.jpg")
 
     async def on_ready(self):
         print("Logged in as " + self.user.name)
@@ -497,6 +555,9 @@ class Client(QWidget, discord.Client):
 
         self.setFixedSize(450, 150)
         self.setWindowTitle("BadDiscord -- Login")
+        self.setWindowIcon(self.ico)
+
+        self.l.setMargin(0)
 
         self.show()
 
