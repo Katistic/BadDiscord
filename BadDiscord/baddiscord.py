@@ -9,7 +9,7 @@ import threading
 
 import discord
 import asyncio
-import requests
+import aiohttp # Instead of requests in favour of asyncio ability
 import time
 import json
 import uuid
@@ -397,6 +397,38 @@ class Client(QWidget, discord.Client):
 
         self.temp = l
 
+
+    async def getUserToken(self, e, p):
+        session = aiohttp.ClientSession(
+            loop=asyncio.get_event_loop(),
+            timeout=aiohttp.ClientTimeout(total=1)
+        )
+
+        payload = {
+            'email': e,
+            'password': p
+        }
+
+        async with session.post('https://discordapp.com/api/v7/auth/login', json=payload) as r:
+            r = await r.json()
+
+        await session.close()
+
+        if "token" in r and not "mfa" in r and not r["token"] == None:
+            return r["token"]
+        elif "errors" in r:
+            pt = ""
+            for key in r["errors"]:
+                if pt != "": pt += "\n"
+                pt += r["errors"][key]["_errors"][0]["message"]
+
+            self.Popup(pt)
+        elif "captcha_key" in r:
+            self.Popup("Account with that email does not exist.")
+        else:
+            self.Popup("Accounts with multi-factor-auth are not yet supported.")
+
+        return None
 
     async def startClient(self):
         l = QVBoxLayout()
