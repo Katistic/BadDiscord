@@ -1,5 +1,5 @@
 from PySide2.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout,\
-QPushButton, QLineEdit, QSizePolicy
+QPushButton, QLineEdit, QSizePolicy, QMessageBox, QStyle
 
 from PySide2.QtCore import Qt
 
@@ -386,6 +386,17 @@ class MainApp(QWidget):
 class Client(QWidget, discord.Client):
     def __init__(self):
         super().__init__()
+
+    def Popup(self, text):
+        l = QMessageBox()
+        l.setText(text)
+        l.setWindowTitle("Login Failed")
+        l.setIcon(QMessageBox.Warning)
+        l.setWindowIcon(self.style().standardIcon(getattr(QStyle, "SP_MessageBoxWarning")))
+        l.show()
+
+        self.temp = l
+
 
     async def startClient(self):
         l = QVBoxLayout()
