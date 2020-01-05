@@ -222,15 +222,15 @@ class LoginMenu(QWidget):
         t = await c.getUserToken(e, p)
 
         if t != None:
-            await self.login(t, bot=False)
+            await self.loginToken(t, False)
 
     async def loginToken(self, t, b):
         try:
             await c.login(t, bot=b)
             try:
-                await c.connect()
+                await discord.Client.connect(c)
             except Exception as e:
-                c.Popup(e)
+                c.Popup(str(e))
         except discord.errors.LoginFailure as e:
             c.Popup("Token is incorrect.")
         except discord.errors.HTTPException as e:
@@ -403,7 +403,8 @@ class MainApp(QWidget):
 
 class Client(QWidget, discord.Client):
     def __init__(self):
-        super().__init__()
+        QWidget.__init__(self)
+        discord.Client.__init__(self)
 
     def Popup(self, text):
         l = QMessageBox()
@@ -438,7 +439,7 @@ class Client(QWidget, discord.Client):
             pt = ""
             for key in r["errors"]:
                 if pt != "": pt += "\n"
-                pt += r["errors"][key]["_errors"][0]["message"]
+                pt += key.capitalize() + ": " + r["errors"][key]["_errors"][0]["message"] + "."
 
             self.Popup(pt)
         elif "captcha_key" in r:
