@@ -528,39 +528,87 @@ class Client(QWidget, QWindow, discord.Client):
 
         self.temp = l
 
-    async def getUserToken(self, e, p):
-        session = aiohttp.ClientSession(
-            loop=asyncio.get_event_loop(),
-            timeout=aiohttp.ClientTimeout(total=1)
-        )
+    async def getMFAToken(self, ticket, code):
+        payload = {
+            "code": code,
+            "gift_code_sku_id": None,
+            "login_source": None,
+            "ticket": ticket
+        }
 
+        async with self.bses.post("https://discordapp.com/api/v7/auth/mfa/totp", json=payload) as r:
+            r = await r.json()
+
+            if "token" not in r:
+                self.Popup(r["message"])
+            else:
+                return r["token"]
+
+        return None
+
+    async def loginWithMFAToken(self, w, code, ticket):
+        w.setEnabled(False)
+
+        token = await self.getMFAToken(ticket, code.text())
+        if token == None:
+            w.setEnabled(True)
+        else:
+            w.hide()
+            del w
+
+            await self.lm.loginToken(token, False)
+
+    async def mfaKeyGrab(self, ticket):
+        w = QWidget()
+        l = QVBoxLayout()
+        w.setLayout(l)
+
+        label = QLabel("Enter your Two-Factor Auth Code")
+        label.setStyleSheet("font: 18pt;")
+        code = QLineEdit()
+        lb = QPushButton("Login")
+
+        l.addWidget(label)
+        l.addWidget(code)
+        l.addWidget(lb)
+
+        lb.clicked.connect(lambda: loop.create_task(self.loginWithMFAToken(w, code, ticket)))
+
+        w.show()
+
+    async def getUserToken(self, e, p):
         payload = {
             'email': e,
             'password': p
         }
 
-        async with session.post('https://discordapp.com/api/v7/auth/login', json=payload) as r:
+        async with self.bses.post('https://discordapp.com/api/v7/auth/login', json=payload) as r:
             r = await r.json()
 
-        await session.close()
+        #await session.close()
 
-        if "token" in r and not "mfa" in r and not r["token"] == None:
-            return r["token"]
-        elif "errors" in r:
-            pt = ""
-            for key in r["errors"]:
-                if pt != "": pt += "\n"
-                pt += key.capitalize() + ": " + r["errors"][key]["_errors"][0]["message"] + "."
+            if "token" in r and not "mfa" in r and not r["token"] == None:
+                return r["token"]
+            elif "errors" in r:
+                pt = ""
+                for key in r["errors"]:
+                    if pt != "": pt += "\n"
+                    pt += key.capitalize() + ": " + r["errors"][key]["_errors"][0]["message"] + "."
 
-            self.Popup(pt)
-        elif "captcha_key" in r:
-            self.Popup("Account with that email does not exist.")
-        else:
-            self.Popup("Accounts with multi-factor-auth are not yet supported.")
+                self.Popup(pt)
+            elif "captcha_key" in r:
+                self.Popup("Account with that email does not exist.")
+            else:
+                await self.mfaKeyGrab(r["ticket"])
 
         return None
 
     async def startClient(self):
+        self.bses = aiohttp.ClientSession(
+            loop=asyncio.get_event_loop(),
+            timeout=aiohttp.ClientTimeout(total=1)
+        )
+
         self.l = QVBoxLayout()
         self.setLayout(self.l)
 
