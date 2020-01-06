@@ -290,6 +290,8 @@ class LoginMenu(QWidget):
         email = QLineEdit()
         email.setStyleSheet("background-color: #ffffff;")
         passw = QLineEdit()
+        passw.setEchoMode(QLineEdit.Password)
+        passw.returnPressed.connect(lambda: loop.create_task(self.loginUserDetails(email.text(), passw.text())))
         passw.setStyleSheet("background-color: #ffffff;")
         dlb = QPushButton("Login")
         dlb.setStyleSheet("background-color: #ffffff;")
@@ -313,6 +315,7 @@ class LoginMenu(QWidget):
         tw.setLayout(twl)
 
         token = QLineEdit()
+        token.returnPressed.connect(lambda: loop.create_task(self.loginToken(token.text(), False)))
         token.setStyleSheet("background-color: #ffffff;")
         tlb = QPushButton("Login")
         tlb.setStyleSheet("background-color: #ffffff;")
@@ -362,6 +365,7 @@ class LoginMenu(QWidget):
         tw.setLayout(twl)
 
         token = QLineEdit()
+        token.returnPressed.connect(lambda: loop.create_task(self.loginToken(token.text(), True)))
         token.setStyleSheet("background-color: #ffffff;")
         tlb = QPushButton("Login")
         tlb.setStyleSheet("background-color: #ffffff;")
@@ -526,6 +530,10 @@ class Client(QWidget, QWindow, discord.Client):
         self.temp = l
 
     async def getMFAToken(self, ticket, code):
+        if code == "":
+            self.Popup("Please enter your two-factor code.")
+            return None
+
         payload = {
             "code": code,
             "gift_code_sku_id": None,
@@ -561,9 +569,11 @@ class Client(QWidget, QWindow, discord.Client):
         w.setLayout(l)
 
         label = QLabel("Enter your Two-Factor Auth Code")
-        label.setStyleSheet("font: 18pt;")
+        label.setStyleSheet("font: 15pt;")
         code = QLineEdit()
+        code.setStyleSheet("background-color: #ffffff;")
         lb = QPushButton("Login")
+        lb.setStyleSheet("background-color: #ffffff;")
 
         l.addWidget(label)
         l.addWidget(code)
@@ -572,6 +582,10 @@ class Client(QWidget, QWindow, discord.Client):
         lb.clicked.connect(lambda: loop.create_task(self.loginWithMFAToken(w, code, ticket)))
 
         w.show()
+        w.setFixedSize(w.size())
+        w.setWindowTitle("BadDiscord -- Two-Factor Verification")
+        w.setWindowIcon(self.ico)
+        w.setStyleSheet("background-color: #7289da;")
 
     async def getUserToken(self, e, p):
         payload = {
