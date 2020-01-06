@@ -16,9 +16,6 @@ import json
 import uuid
 import os
 
-io = None
-c = None
-
 class IOManager: ## Manages reading and writing data to files.
     def __init__(self, file, start=True, jtype=True, binary=False):
         '''
